@@ -28,9 +28,9 @@ class Player:
     @health.setter
     def health(self, value):
         self._health = max(0, min(value, self.max_health))
-        if self._health <= 0:
-            print(f"{self.name} has fallen! Beautiful story.\nDEAD")
-            sys.exit()
+
+    def is_dead(self):
+        return self._health <= 0
 
     def attack(self):
         min_attack = self.attack_range[0] + self.level
@@ -70,13 +70,23 @@ class Player:
 
 
 class Enemy:
-    def __init__(self, name, player, base_health=7, base_attack=(0, 5)):
+    def __init__(self, name, player, base_health=(2, 5), base_attack=(0, 5)):
         self.name = name
         self.player = player
-        self.base_health = base_health
+        self.max_health = random.randint(*base_health) + (player.level * 5)
+        self._health = self.max_health
         self.base_attack = base_attack
-        # enemy health scales with player level
-        self.health = self.base_health + (self.player.level * 9)
+
+    @property
+    def health(self):
+        return self._health
+    
+    @health.setter
+    def health(self, value):
+        self._health = max(0, value)
+
+    def is_dead(self):
+        return self._health <= 0
 
     def attack(self):
         min_attack = self.base_attack[0] + self.player.level
@@ -122,7 +132,7 @@ time.sleep(2)
 
 enemies = ["Ogre", "Goblin", "Bandit", "Skeleton", "Dire Wolf", "Troll", "Drow"]
 enemy_name = random.choice(enemies)
-enemy = Enemy(enemy_name, player, base_health=random.randint(5, 10), base_attack=(0, 5))
+enemy = Enemy(enemy_name, player, base_health=(2, 5), base_attack=(0, 5))
 
 print(f"{enemy.name} blocks your path! Careful now!")
 time.sleep(0.5)
@@ -132,22 +142,26 @@ answer = int(input("1-Attack, 2-Run away\n"))
 
 if answer == 1:
     print("You begin to brawl...")
-    while player.health > 0 and enemy.health > 0:
+    while not player.is_dead() and not enemy.is_dead():
         attack = player.attack()
         enemy.health -= attack
         time.sleep(0.5)
         print(f"{player.name} hits {enemy.name} for {attack} HP! Enemy health: {enemy.health}")
 
-        if enemy.health > 0:
-            enemy_attack = enemy.attack()
-            player.health -= enemy_attack
-            time.sleep(0.5)
-            print(f"{enemy.name} hits {player.name} for {enemy_attack} HP! "
-                  f"Player health: {player.health}")
-            time.sleep(0.5)
+        if enemy.is_dead():
+            print(f"First time's the charm! Congratulations on your very first victory, {name}.")
+            break
 
-    if player.health > 0 >= enemy.health:
-        print(f"First time's the charm! Congratulations on your very first victory, {name}.")
+        attack = enemy.attack()
+        player.health -= attack
+        time.sleep(0.5)
+        print(f"{enemy.name} hits {player.name} for {attack} HP! "
+                f"Player health: {player.health}")
+        time.sleep(0.5)
+
+        if player.is_dead():
+            print(f"{player.name} was defeated by {enemy.name}! Beautiful story.\nDEAD")
+            sys.exit()
 
 elif answer == 2:
     luck = random.randint(1, 20)
