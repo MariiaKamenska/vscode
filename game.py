@@ -2,14 +2,34 @@ import random
 import sys
 import time
 
+difficulty_chart = {
+    "Easy": {
+        'player': {'hp': 1, 'attack': 1, 'xp_gain': 0.7, 'gold_gain': 1.3},
+        'enemy': {'hp': 1, 'attack': 1}
+    },
+    "Normal": {
+        'player': {'hp': 0.8, 'attack': 1.1, 'xp_gain': 1, 'gold_gain': 1},
+        'enemy': {'hp': 1.2, 'attack': 1.2}
+    },
+    "Hard": {
+        'player': {'hp': 0.72, 'attack': 1.2, 'xp_gain': 1.3, 'gold_gain': 0.8},
+        'enemy': {'hp': 1.4, 'attack': 1.2}
+    },
+    "Masochist": {
+        'player': {'hp': 0.65, 'attack': 1.4, 'xp_gain': 1.6, 'gold_gain': 0.6},
+        'enemy': {'hp': 2, 'attack': 1.6}
+    }
+
+}
 
 class Player:
-    def __init__(self, name, race, health=10, attack_range=(0, 5), gold=0,
-                 lawful=0, chaotic=0, good=0, evil=0, level=1, xp=0):
+    def __init__(self, name, race, base_health=12, attack_range=(0, 5), gold=0, 
+                 lawful=0, chaotic=0, good=0, evil=0, level=1, xp=0, difficulty = 'Normal'):
         self.name = name
         self.race = race
-        self.max_health = health
-        self._health = health
+        self.difficulty = difficulty
+        self.max_health = int(base_health * difficulty_chart[difficulty]['player']['hp'])
+        self._health = self.max_health
         self.attack_range = attack_range
         self.gold = gold
         self.level = level
@@ -33,8 +53,8 @@ class Player:
         return self._health <= 0
 
     def attack(self):
-        min_attack = self.attack_range[0] + self.level
-        max_attack = self.attack_range[1] + self.level * 2
+        min_attack = int((self.attack_range[0] + self.level) * difficulty_chart[self.difficulty]['player']['attack'])
+        max_attack = int((self.attack_range[1] + self.level * 2) * difficulty_chart[self.difficulty]['player']['attack'])
         return random.randint(min_attack, max_attack)
 
     def restore_health(self):
@@ -42,8 +62,9 @@ class Player:
         print(f"{self.name} rests and restores health to {self.health}/{self.max_health} HP.")
 
     def gain_gold(self, amount):
-        self.gold += amount
-        print(f"{self.name} acquires {amount} gold. Total gold: {self.gold}.")
+        scaled_amount = int(amount * difficulty_chart[self.difficulty]['player']['gold_gain'])
+        self.gold += scaled_amount
+        print(f"{self.name} acquires {scaled_amount} gold. Total gold: {self.gold}.")
 
     def update_alignment(self, lawful_delta=0, chaotic_delta=0, good_delta=0, evil_delta=0):
         self.lawful += lawful_delta
@@ -54,8 +75,9 @@ class Player:
               f"Good {self.good}, Evil {self.evil}.")
 
     def gain_xp(self, amount):
-        self.xp += amount
-        print(f"{self.name} gains {amount} XP. Total XP: {self.xp}.")
+        scaled_xp = int(amount * difficulty_chart[self.difficulty]['player']['xp_gain'])
+        self.xp += scaled_xp
+        print(f"{self.name} gains {scaled_xp} XP. Total XP: {self.xp}.")
         while self.xp >= self.next_level_xp:
             self.xp -= self.next_level_xp
             self.level += 1
@@ -70,10 +92,10 @@ class Player:
 
 
 class Enemy:
-    def __init__(self, name, player, base_health=(2, 5), base_attack=(0, 5)):
+    def __init__(self, name, player, base_health=(4, 7), base_attack=(0, 5)):
         self.name = name
         self.player = player
-        self.max_health = random.randint(*base_health) + (player.level * 5)
+        self.max_health = int(random.randint(*base_health) * difficulty_chart[player.difficulty]["enemy"]["hp"])
         self._health = self.max_health
         self.base_attack = base_attack
 
@@ -89,41 +111,33 @@ class Enemy:
         return self._health <= 0
 
     def attack(self):
-        min_attack = self.base_attack[0] + self.player.level
-        max_attack = self.base_attack[1] + self.player.level * 2
+        min_attack = int((self.base_attack[0] + self.player.level) * difficulty_chart[self.player.difficulty]['enemy']['attack'])
+        max_attack = int((self.base_attack[1] + self.player.level * 2) * difficulty_chart[self.player.difficulty]['enemy']['attack'])
         return random.randint(min_attack, max_attack)
 
 
 
-print("Hello!")
+print("Hello! Choose the difficulty:\n1-Easy, 2-Normal, 3-Hard, 4-Masochist")
+diff_choice = int(input())
+diff_map = {1:'Easy', 2:'Normal', 3:'Hard', 4:'Masochist'}
+difficulty = diff_map.get(diff_choice)
+
 name = str(input('Enter your name: '))
 time.sleep(0.5)
 print(f"Nice name for our main character - {name}!")
-print('Enter your race\n1-Human, 2-Orc, 3-Tiefling, 4-Dragonborn, 5-Elf')
-input_race = int(input())
-if input_race == 1:
-    race = "Human"
-elif input_race == 2:
-    race = "Orc"
-elif input_race == 3:
-    race = "Tiefling"
-elif input_race == 4:
-    race = "Dragonborn"
-elif input_race == 5:
-    race = "Elf"
-else:
-    sys.exit("No game for you!")
-
+race_choice = int(input('Enter your race\n1-Human, 2-Orc, 3-Tiefling, 4-Dragonborn, 5-Elf'))
+race_map = {1:"Human",2:"Orc",3:"Tiefling",4:"Dragonborn",5:"Elf"}
+race = race_map.get(race_choice)
 gold = random.randint(0, 45)
+
 player = Player(name, race, health=10, attack_range=(0, 6), gold=gold)
+print(f"{player.name}, the {player.race}, starts with {player.health} HP and {player.gold} gold on {difficulty} difficulty.")
 
-city = input("Enter your city: ")
-time.sleep(0.5)
-print(f'{player.name}, the {player.race} from {city}. Wondrous!')
-time.sleep(2)
-
-print(f"Your initial money supply consists of {player.gold} gold.")
-time.sleep(3)
+# city = input("Enter your city: ")
+# time.sleep(0.5)
+# print(f'{player.name}, the {player.race} from {city}. Wondrous!')
+# time.sleep(2)
+time.sleep(6)
 print("You begin as a Neutral character, but you will have all the freedom "
       "to bring changes as the story progresses.")
 time.sleep(6)
@@ -177,8 +191,8 @@ elif answer == 2:
               f"Your health dropped to {player.health}.")
         print(f"Your amount of money dropped to {loss_gold}. Current gold: {player.gold}.")
         time.sleep(1)
-        if player.health <= 0:
-            print(f"Oops, {player.name} couldn't survive that. \nDEAD")
+        if player.is_dead():
+            print(f"Oops, {player.name} couldn't survive that.\nDEAD")
             sys.exit()
 else:
     print("Wrong option!")
@@ -189,7 +203,7 @@ time.sleep(3)
 print(f"You roll {luck}.")
 time.sleep(0.5)
 if luck > 13:
-    print("Woah! You notice a few shiny coins lying on the ground before you!\nDo you pick them up?")
+    print("You notice a few shiny coins lying on the ground before you!\nDo you pick them up?")
     time.sleep(2)
     answer = int(input("1-'Hell yeah!', 2-'No, I am a law-abiding citizen.'\n"))
     if answer == 1:
